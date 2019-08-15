@@ -23,7 +23,7 @@ for (page_num in 1:938) {
 
 case_links_table <- as.data.table(case_links)
 
-feather::write_feather(case_links_table, "case_links.feather")
+feather::write_feather(case_links_table, "./data/case_links.feather")
 
 
 

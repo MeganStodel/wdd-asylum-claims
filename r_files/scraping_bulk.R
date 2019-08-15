@@ -4,10 +4,14 @@ source("./r_files/scraping_prep.R")
 full_text_of_cases <- data.table("case_id" = character(), 
                                  "full_text" = character())
 
-link_number_start <- 20000
-link_number_end <- 25922
+case_links <- as.data.table(read_feather("./data/case_links.feather"))
 
-case_links <- as.data.table(read_feather("case_links.feather"))
+case_links <- case_links[!13091]
+case_links <- case_links[!22804]
+
+link_number_start <- 1
+link_number_end <- case_links[, .N]
+
 focus_links <- case_links[link_number_start:link_number_end, case_links]
 
 #### Loop through links to pull out information
@@ -33,6 +37,10 @@ for (i in 1:length(focus_links)) {
   
   prom_date <- as.Date(prom_date, format = "%d %B %Y")
   
+  reported_status <- example_decision %>%
+    html_node("li:nth-child(3) .label+ span") %>%
+    html_text()
+  
   if (is.na(decision_text)) {
 
     link_name <- example_decision %>%
@@ -48,9 +56,10 @@ for (i in 1:length(focus_links)) {
   }
   
   id_dt <- data.table("case_id" = case_id, 
-                      "promulgation_date" = prom_date)
+                      "promulgation_date" = prom_date, 
+                      "reported_status" = reported_status)
   
-  full_text_of_cases <- rbind(full_text_of_cases, id_dt[, .(case_id, promulgation_date)], fill = TRUE)
+  full_text_of_cases <- rbind(full_text_of_cases, id_dt, fill = TRUE)
   
   full_text_of_cases[case_id %in% id_dt[, case_id],
                      `:=` (
@@ -63,7 +72,7 @@ end <- Sys.time()
 
 end - start
 
-feather::write_feather(full_text_of_cases, "data/case_text_last_6000.feather")
+feather::write_feather(full_text_of_cases, "data/all_cases_text.feather")
 
 
 #### Build dataset
